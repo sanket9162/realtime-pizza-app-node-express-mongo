@@ -9,6 +9,7 @@ const session = require("express-session");
 const flash = require("express-flash");
 const MongoDbStore = require("connect-mongo");
 const passport = require("passport");
+const Emitter = require("events");
 
 const PORT = process.env.PORT || 4000;
 mongoose
@@ -24,7 +25,9 @@ mongoose
     console.log("not conneted");
   });
 
-// Session config
+const eventEmitter = new Emitter();
+app.set("eventEmitter", eventEmitter);
+
 app.use(
   session({
     secret: process.env.COOKIE_SECRET,
@@ -37,6 +40,8 @@ app.use(
   })
 );
 const passportInit = require("./app/config/passport");
+const Server = require("http");
+
 passportInit(passport);
 app.use(passport.initialize());
 app.use(passport.session());
@@ -56,6 +61,21 @@ app.use(express.static("public"));
 
 require("./routes/web")(app);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`listening at port ${PORT} `);
+});
+
+const io = require("socket.io")(server);
+io.on("connection", (socket) => {
+  socket.on("join", (orderId) => {
+    socket.join(orderId);
+  });
+});
+
+eventEmitter.on("orderUpdated", (data) => {
+  io.to(`order_${data.id}`).emit("orderUpdated", data);
+});
+
+eventEmitter.on("orderPlaced", (data) => {
+  io.to("adminRoom").emit("orderPlaced", data);
 });

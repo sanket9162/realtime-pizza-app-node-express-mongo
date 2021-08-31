@@ -5,7 +5,7 @@ const user = require("../models/user");
 
 const authController = () => {
   const _getRedirectUrl = (req) => {
-    return req.user.role === "admin" ? "/admin/orders" : "/customer/oders";
+    return req.user.role === "admin" ? "/admin/orders" : "/customers/orders";
   };
   return {
     login(req, res) {
@@ -76,8 +76,6 @@ const authController = () => {
           req.flash("error", "Something went wrong");
           return res.redirect("/register");
         });
-
-      console.log(req.body);
     },
     logout(req, res) {
       req.logout();
